@@ -1,5 +1,6 @@
-import {BeforeInsert, BeforeUpdate, Column, Entity, OneToMany, PrimaryGeneratedColumn} from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ProductImage } from './';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -22,12 +23,12 @@ export class Product {
     })
     description: string;
 
-    @Column('text',{
+    @Column('text', {
         unique: true,
     })
     slug: string;
 
-    @Column('int',{
+    @Column('int', {
         default: 0,
     })
     stock: number;
@@ -40,42 +41,49 @@ export class Product {
     @Column('text')
     gender: string;
 
-    @Column('text',{
+    @Column('text', {
         array: true,
         default: []
     })
     tags: string[];
 
     @OneToMany(
-        ()=> ProductImage,
+        () => ProductImage,
         (productImage) => productImage.product,
         {
             cascade: true,
             eager: true //para cargar todas las relaciones
         }
     )
-    images?: ProductImage[]
+    images?: ProductImage[];
+
+    @ManyToOne(
+        () => User,
+        (user) => user.product,
+        { eager: true }
+    )
+    user: User
 
 
     @BeforeInsert()
     checkSlugInsert() {
-        if(!this.slug){
+        if (!this.slug) {
             this.slug = this.title;
         }
         this.slug = this.changeChain(this.slug);
     }
     @BeforeUpdate()
-    checkSlugUpdate(){
+    checkSlugUpdate() {
         /*if(!this.slug){
             this.slug = this.title;
         }*/
         this.slug = this.changeChain(this.slug);
     }
 
-    private changeChain(term: string){
+    private changeChain(term: string) {
         return term
             .toLowerCase()
             .replaceAll(' ', '_')
-            .replaceAll("'",'');
+            .replaceAll("'", '');
     }
 }

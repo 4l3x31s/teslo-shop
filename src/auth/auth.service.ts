@@ -15,40 +15,40 @@ export class AuthService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService
-  ){}
+  ) { }
   async create(createUserDto: CreateUserDto) {
     try {
 
-      const {password, ...userData} = createUserDto;
+      const { password, ...userData } = createUserDto;
       const user = this.userRepository.create({
         ...userData,
-        password: bcrypt.hashSync(password,10),
+        password: bcrypt.hashSync(password, 10),
       });
       await this.userRepository.save(user);
 
       delete user.password;
-      return {...user, token: this.getJwtToken({id: user.id})};
+      return { ...user, token: this.getJwtToken({ id: user.id }) };
 
       //TODO: retornar JWT
     } catch (error) {
       this.handleDbErrors(error);
     }
-    
+
   }
 
-  async login(loginUserDto:LoginUserDto){
+  async login(loginUserDto: LoginUserDto) {
     try {
-      const{password, email} = loginUserDto;
+      const { password, email } = loginUserDto;
 
       const user = await this.userRepository.findOne({
-        where: {email},
-        select: {email: true, password: true, id: true}
+        where: { email },
+        select: { email: true, password: true, id: true }
       });
-      if(!user) throw new UnauthorizedException('Creadentials are not valid');
+      if (!user) throw new UnauthorizedException('Creadentials are not valid');
 
-      if(!bcrypt.compareSync(password, user.password)) throw new UnauthorizedException('Creadentials are not valid');
+      if (!bcrypt.compareSync(password, user.password)) throw new UnauthorizedException('Creadentials are not valid');
 
-      return {...user, token: this.getJwtToken({id: user.id})};
+      return { ...user, token: this.getJwtToken({ id: user.id }) };
 
       //TODO: retornar JWT
     } catch (error) {
@@ -56,14 +56,25 @@ export class AuthService {
     }
   }
 
-  private getJwtToken(payload: JwtPayload){
+  async checkAuthStatus(userInput: User) {
+    try {
+
+      return { ...userInput, token: this.getJwtToken({ id: userInput.id }) };
+
+      //TODO: retornar JWT
+    } catch (error) {
+      this.handleDbErrors(error);
+    }
+  }
+
+  private getJwtToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
     return token;
   }
 
 
   private handleDbErrors(error: any): never {
-    if(error.code === '23505') throw new BadRequestException(error.detail);
+    if (error.code === '23505') throw new BadRequestException(error.detail);
 
     console.log(error);
     throw new InternalServerErrorException('Please check server logs');
